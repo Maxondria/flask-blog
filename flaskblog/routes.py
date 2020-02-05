@@ -1,5 +1,8 @@
-from flask import Flask, render_template, url_for, flash, redirect
-from forms import RegistrationForm, LoginForm
+from flask import flash, redirect, render_template, url_for
+
+from flaskblog import app
+from flaskblog.forms import LoginForm, RegistrationForm
+from flaskblog.models import Post, User
 
 posts = [
     {
@@ -15,10 +18,6 @@ posts = [
         "date_posted": "2020-01-08"
     },
 ]
-
-app = Flask(__name__)
-
-app.config['SECRET_KEY'] = 'ee9ce57217cad182c77c88b36f62e79c'
 
 
 @app.route('/')
@@ -51,7 +50,3 @@ def login():
         else:
             flash('Authentication Failed', 'danger')
     return render_template('login.html', title='LogIn', form=form)
-
-
-if __name__ == "__main__":
-    app.run(debug=True)

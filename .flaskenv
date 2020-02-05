@@ -1,2 +1,2 @@
-FLASK_APP=flaskblog.py
+FLASK_APP=run.py
 FLASK_DEBUG=True
