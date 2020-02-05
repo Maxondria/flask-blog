@@ -15,6 +15,10 @@ class User(db.Model):
 
     posts = db.relationship('Post', backref='author', lazy=True)
 
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
     def __repr__(self):
         return f'User("{self.username}", "{self.email}", "{self.image_file}")'
 

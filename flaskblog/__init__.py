@@ -1,5 +1,7 @@
 from flask import Flask
+from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
+
 
 app = Flask(__name__)
 
@@ -7,6 +9,13 @@ app.config['SECRET_KEY'] = 'ee9ce57217cad182c77c88b36f62e79c'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///site.db'
 
 db = SQLAlchemy(app)
+bcrypt = Bcrypt(app)
+
+
+@app.before_first_request
+def create_tables():
+    db.create_all()
+
 
 '''
  [App routes]
