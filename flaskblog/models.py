@@ -38,5 +38,21 @@ class Post(db.Model):
     content = db.Column(db.Text, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
 
+    def save(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    @classmethod
+    def find_all(cls):
+        return cls.query.all()
+
+    @classmethod
+    def find_one(cls, post_id):
+        return cls.query.get_or_404(post_id)
+
     def __repr__(self):
         return f'Post("{self.title}", "{self.date_posted}")'

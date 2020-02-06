@@ -1,30 +1,17 @@
-from flask import flash, redirect, render_template, request, url_for
+from flask import abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
 from flaskblog import app, bcrypt
-from flaskblog.forms import LoginForm, RegistrationForm, UpdateAccountForm
+from flaskblog.forms import (LoginForm, PostForm, RegistrationForm,
+                             UpdateAccountForm)
 from flaskblog.libraries import save_picture
 from flaskblog.models import Post, User
-
-posts = [
-    {
-        "author": "Lars Vondracek",
-        "title": "Trance",
-        "content": "nulla nisl nunc nisl duis bibendum felis sed t",
-        "date_posted": "2019-09-08"
-    },
-    {
-        "author": "Portia Stennard",
-        "title": "Quiet Flows the Don (Tikhiy Don)",
-        "content": "luctus ultricies eu nibh quisque id justo sit amet sapien ",
-        "date_posted": "2020-01-08"
-    },
-]
 
 
 @app.route('/')
 @app.route('/home')
 def home():
+    posts = Post.find_all()
     return render_template('home.html', posts=posts)
 
 
@@ -62,7 +49,7 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user and bcrypt.check_password_hash(user.password, form.password.data):
-            login_user(user, remember=form.remember.data) #set current_user
+            login_user(user, remember=form.remember.data)  # set current_user
 
             # Redirect user to the login_required restricted page on login else send them home
             next_page = request.args.get('next')
@@ -86,7 +73,7 @@ def account():
         if form.picture.data:
             picture_file = save_picture(form.picture.data)
             current_user.image_file = picture_file
-            
+
         current_user.username = form.username.data
         current_user.email = form.email.data
         current_user.save()
@@ -99,3 +86,54 @@ def account():
         'static', filename=f'profile_pics/{current_user.image_file}')
     return render_template('account.html', title='Account',
                            image_file=image_file, form=form)
+
+
+@app.route('/post/create', methods=['GET', 'POST'])
+@login_required
+def create_post():
+    form = PostForm()
+    if form.validate_on_submit():
+        post = Post(title=form.title.data,
+                    content=form.content.data, author=current_user)
+        post.save()
+        flash('Your post has been created', 'success')
+        return redirect(url_for('home'))
+    return render_template('create_post.html', title='Create Post', form=form, legend='Create Post')
+
+
+@app.route('/post/<int:post_id>', methods=['GET', 'POST'])
+def post(post_id):
+    post = Post.find_one(post_id)
+    return render_template('post.html', title=post.title, post=post)
+
+
+@app.route('/post/<int:post_id>/update', methods=['GET', 'POST'])
+@login_required
+def update_post(post_id):
+    post = Post.find_one(post_id)
+
+    if post.author != current_user:
+        abort(403)
+    form = PostForm()
+    if form.validate_on_submit():
+        post.title = form.title.data
+        post.content = form.content.data
+        post.save()
+        flash('Your post has been updated!', 'success')
+        return redirect(url_for('post', post_id=post_id))
+    elif request.method == 'GET':
+        form.title.data = post.title
+        form.content.data = post.content
+    return render_template('create_post.html', title='Update Post', form=form, legend='Update Post')
+
+
+@app.route("/post/<int:post_id>/delete", methods=['POST'])
+@login_required
+def delete_post(post_id):
+    post = Post.find_one(post_id)
+
+    if post.author != current_user:
+        abort(403)
+    post.delete()
+    flash('Your post has been deleted!', 'success')
+    return redirect(url_for('home'))
