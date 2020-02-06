@@ -2,7 +2,8 @@ from flask import flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required, login_user, logout_user
 
 from flaskblog import app, bcrypt
-from flaskblog.forms import LoginForm, RegistrationForm
+from flaskblog.forms import LoginForm, RegistrationForm, UpdateAccountForm
+from flaskblog.libraries import save_picture
 from flaskblog.models import Post, User
 
 posts = [
@@ -61,7 +62,7 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user and bcrypt.check_password_hash(user.password, form.password.data):
-            login_user(user, remember=form.remember.data)
+            login_user(user, remember=form.remember.data) #set current_user
 
             # Redirect user to the login_required restricted page on login else send them home
             next_page = request.args.get('next')
@@ -77,7 +78,24 @@ def logout():
     return redirect(url_for('home'))
 
 
-@app.route("/account")
+@app.route("/account",  methods=['GET', 'POST'])
 @login_required
 def account():
-    return render_template('account.html', title='Account')
+    form = UpdateAccountForm()
+    if form.validate_on_submit():
+        if form.picture.data:
+            picture_file = save_picture(form.picture.data)
+            current_user.image_file = picture_file
+            
+        current_user.username = form.username.data
+        current_user.email = form.email.data
+        current_user.save()
+        flash('Your account has been updated', 'success')
+        return redirect(url_for('account'))
+    elif request.method == 'GET':
+        form.username.data = current_user.username
+        form.email.data = current_user.email
+    image_file = url_for(
+        'static', filename=f'profile_pics/{current_user.image_file}')
+    return render_template('account.html', title='Account',
+                           image_file=image_file, form=form)
