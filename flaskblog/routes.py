@@ -11,7 +11,25 @@ from flaskblog.models import Post, User
 @app.route('/')
 @app.route('/home')
 def home():
-    posts = Post.find_all()
+    page = request.args.get('page', 1, type=int)
+    posts = Post.find_all(page)
+
+    '''
+     [Pagination]
+    
+    [Available methods on the posts object (Pagination object)]
+    
+    Returns:
+            - print(dir(posts)) - Sell all available methods on object
+            - print('Has next?: ' + 'True' if posts.has_next else 'False')
+            - print('Has prev?: ' + 'True' if posts.has_prev else 'False')
+            - print('Next page: ' + str(posts.next_num))
+            - print('Prev page?: ' + str(posts.prev_num))
+            - print('Total Items ' + str(posts.total))
+            - print(posts.items) - the real posts
+            - print('Posts per page: ' + str(posts.per_page))
+            - print('Current page: ' + str(posts.page))
+    '''
     return render_template('home.html', posts=posts)
 
 
@@ -137,3 +155,11 @@ def delete_post(post_id):
     post.delete()
     flash('Your post has been deleted!', 'success')
     return redirect(url_for('home'))
+
+
+@app.route('/user/<string:username>')
+def user_posts(username):
+    page = request.args.get('page', 1, type=int)
+    user = User.find_by_username(username)
+    posts = Post.find_posts_by_user(user=user, page=page)
+    return render_template('user_posts.html', posts=posts, user=user)
