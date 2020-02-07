@@ -26,6 +26,10 @@ class User(db.Model, UserMixin):
         db.session.add(self)
         db.session.commit()
 
+    @classmethod
+    def find_by_username(cls, username):
+        return cls.query.filter_by(username=username).first_or_404()
+
     def __repr__(self):
         return f'User("{self.username}", "{self.email}", "{self.image_file}")'
 
@@ -47,8 +51,14 @@ class Post(db.Model):
         db.session.commit()
 
     @classmethod
-    def find_all(cls):
-        return cls.query.all()
+    def find_all(cls, page):
+        return cls.query.order_by(cls.date_posted.desc()).paginate(per_page=5, page=page)
+
+    @classmethod
+    def find_posts_by_user(cls, user, page):
+        return cls.query.filter_by(author=user)\
+            .order_by(cls.date_posted.desc())\
+            .paginate(per_page=5, page=page)
 
     @classmethod
     def find_one(cls, post_id):
