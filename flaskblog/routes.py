@@ -3,8 +3,9 @@ from flask_login import current_user, login_required, login_user, logout_user
 
 from flaskblog import app, bcrypt
 from flaskblog.forms import (LoginForm, PostForm, RegistrationForm,
+                             RequestResetForm, ResetPasswordForm,
                              UpdateAccountForm)
-from flaskblog.libraries import save_picture
+from flaskblog.libraries import save_picture, send_reset_email
 from flaskblog.models import Post, User
 
 
@@ -65,7 +66,7 @@ def login():
 
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
+        user = User.find_by_email(email=form.email.data)
         if user and bcrypt.check_password_hash(user.password, form.password.data):
             login_user(user, remember=form.remember.data)  # set current_user
 
@@ -163,3 +164,39 @@ def user_posts(username):
     user = User.find_by_username(username)
     posts = Post.find_posts_by_user(user=user, page=page)
     return render_template('user_posts.html', posts=posts, user=user)
+
+
+@app.route("/reset_password", methods=['GET', 'POST'])
+def request_reset_password():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+
+    form = RequestResetForm()
+    if form.validate_on_submit():
+        user = User.find_by_email(email=form.email.data)
+        send_reset_email(user)
+        flash('An email with password reset instructions has been sent to you', 'info')
+        return redirect(url_for('login'))
+    return render_template('request_reset_password.html', title='Request Reset Password', form=form)
+
+
+@app.route("/reset_password/<string:token>", methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+
+    user = User.verify_reset_token(token)
+    if not user:
+        flash('Oops, looks like this URL is invalid, Try again!', 'warning')
+        return redirect(url_for('request_reset_password'))
+
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        hashed_password = bcrypt.generate_password_hash(
+            form.password.data).decode('utf-8')
+
+        user.password = hashed_password
+        user.save()
+        flash('Your password has been updated, please login!', 'success')
+        return redirect(url_for('login'))
+    return render_template('reset_password.html', title='Reset Password', form=form)

@@ -1,8 +1,9 @@
 from datetime import datetime
 
 from flask_login import UserMixin
+from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 
-from flaskblog import db, login_manager
+from flaskblog import app, db, login_manager
 
 
 @login_manager.user_loader
@@ -29,6 +30,23 @@ class User(db.Model, UserMixin):
     @classmethod
     def find_by_username(cls, username):
         return cls.query.filter_by(username=username).first_or_404()
+
+    @classmethod
+    def find_by_email(cls, email):
+        return cls.query.filter_by(email=email).first_or_404()
+
+    def get_reset_token(self, expires_sec=1800):
+        s = Serializer(app.config.get('SECRET_KEY'), expires_sec)
+        return s.dumps({'user_id': self.id}).decode('utf-8')
+
+    @classmethod
+    def verify_reset_token(cls, token):
+        s = Serializer(app.config.get('SECRET_KEY'))
+        try:
+            user_id = s.loads(token)['user_id']
+        except:
+            return None
+        return cls.query.get(user_id)
 
     def __repr__(self):
         return f'User("{self.username}", "{self.email}", "{self.image_file}")'

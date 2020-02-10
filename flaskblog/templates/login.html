@@ -46,19 +46,15 @@
 
             <div class="form-group">
                 {{ form.submit(class="btn btn-outline-info") }}
+                <small class="text-muted ml-2">
+                    Already have an account? <a href="{{ url_for('request_reset_password') }}">Forgot Password?</a>
+                </small>
             </div>
-
-            <small class="text-muted ml-2">
-                <!-- login is the name of a function for the route  -->
-                Already have an account? <a href="#">Forgot Password?</a>
-            </small>
-
         </form>
     </div>
 
     <div class="border-top pt-3">
         <small class="text-muted">
-            <!-- register is the name of a function for the route  -->
             Need an account? <a href="{{ url_for('register') }}" class="ml-2">Sign Up Now</a>
         </small>
     </div>
